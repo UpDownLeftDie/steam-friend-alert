@@ -9,5 +9,8 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.json ./
 COPY src ./src
 
+RUN mkdir -p /data && chown -R node:node /app /data
+USER node
+
 ENV NODE_ENV=production
 CMD ["pnpm", "start"]

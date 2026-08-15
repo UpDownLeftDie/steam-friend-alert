@@ -6,8 +6,8 @@
   "scripts": {
     "start": "tsx src/cli.ts",
     "start:once": "tsx src/cli.ts --once",
-    "dev:worker": "wrangler dev",
-    "deploy": "wrangler deploy",
+		"dev:worker": "wrangler dev",
+		"deploy:worker": "wrangler deploy",
     "cf-typegen": "wrangler types",
     "lint": "wrangler types && biome check . && tsc --noEmit",
     "lint:fix": "wrangler types && biome check --write . && tsc --noEmit"

@@ -128,20 +128,10 @@ pnpm install
 pnpm start
 ```
 
-Leave it running — it polls on the interval you set and prints a log line for each alert it sends.
+`pnpm start` stays running: it polls on the interval you set and prints a log line for each alert it sends. Closing the terminal stops it.
+`pnpm start:once` runs once and then closes
 
-```bash
-pnpm start:once   # one poll, then exit
-```
-
-To keep it running across logouts and reboots:
-
-```bash
-pnpm add -g pm2
-pm2 start "pnpm start" --name steam-alerts
-pm2 save
-pm2 startup   # follow the printed instructions to launch on boot
-```
+To keep it running in the background or across reboots, use whatever process manager you prefer ([PM2](https://pm2.keymetrics.io), systemd, launchd, Task Scheduler, etc.).
 
 State is stored in `state.json` next to the project (or `STATE_PATH`).
 
@@ -174,7 +164,18 @@ Skip `config.json`. Use the same [watches](#friends-to-watch) and [notifications
 4. Deploy, then set secrets (this overwrites `NOTIFICATIONS` from `wrangler.jsonc` if you set it here):
 
    ```bash
-   pnpm deploy
+   pnpm deploy:worker
+   ```
+
+   then run either
+
+   ```bash
+   pnpm wrangler secret bulk .dev.vars
+   ```
+
+   OR manually set each secret:
+
+   ```bash
    pnpm wrangler secret put STEAM_API_KEY
    pnpm wrangler secret put NOTIFICATIONS
    ```

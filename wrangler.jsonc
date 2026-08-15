@@ -13,11 +13,14 @@
   "kv_namespaces": [
     {
       "binding": "STATE",
+      "id": "c2697977f1554fc6b95e5691e5bc4159",
     },
   ],
+  // Non-secret settings. Secrets (STEAM_API_KEY, NOTIFICATIONS) live in
+  // .dev.vars locally and `wrangler secret put` in production — those
+  // override vars of the same name, so do not duplicate them here.
   "vars": {
     "STALE_AFTER_MINUTES": "720",
     "WATCHES": "[{\"steamId\":\"76561197960287930\",\"label\":\"Charlie\"}]",
-    "NOTIFICATIONS": "[{\"type\":\"ntfy\",\"topic\":\"your-unique-topic-name\"}]",
   },
 }

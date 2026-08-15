@@ -1,4 +1,2 @@
 STEAM_API_KEY=YOUR_STEAM_API_KEY
 NOTIFICATIONS=[{"type":"ntfy","topic":"your-unique-topic-name","url":"https://ntfy.sh","token":""}]
-STALE_AFTER_MINUTES=720
-WATCHES=[{"steamId":"76561197960287930","label":"Charlie"}]

@@ -4,7 +4,7 @@
 #
 #   fly launch --copy-config --name YOUR-APP-NAME
 #   fly volumes create steam_alert_state --size 1
-#   fly secrets set STEAM_API_KEY=... NTFY_TOKEN=...
+#   fly secrets set STEAM_API_KEY=... NOTIFICATIONS='[{"type":"ntfy","topic":"..."}]'
 
 app = "steam-friend-alert"
 primary_region = "sjc"
@@ -15,10 +15,9 @@ primary_region = "sjc"
   PORT = "8080"
   POLL_INTERVAL_MINUTES = "5"
   STALE_AFTER_MINUTES = "720"
-  NTFY_URL = "https://ntfy.sh"
-  NTFY_TOPIC = "your-unique-topic-name"
   STATE_PATH = "/data/state.json"
-  WATCHES = '''[{"steamId":"76561197960287930","label":"Robin"}]'''
+  WATCHES = '''[{"steamId":"76561197960287930","label":"Charlie"}]'''
+  NOTIFICATIONS = '''[{"type":"ntfy","topic":"your-unique-topic-name"}]'''
 
 [http_service]
   internal_port = 8080

@@ -3,6 +3,14 @@ import { pollOnce } from "./poll.ts";
 
 const STATE_KEY = "state";
 
+interface WorkerEnv {
+	STEAM_API_KEY: string;
+	NOTIFICATIONS: string;
+	STALE_AFTER_MINUTES?: string;
+	WATCHES?: string;
+	STATE: KVNamespace;
+}
+
 export default {
 	async fetch(): Promise<Response> {
 		return new Response("steam-friend-alert\n", {
@@ -14,9 +22,7 @@ export default {
 		try {
 			const config = configFromEnv({
 				STEAM_API_KEY: env.STEAM_API_KEY,
-				NTFY_TOPIC: env.NTFY_TOPIC,
-				NTFY_URL: env.NTFY_URL,
-				NTFY_TOKEN: env.NTFY_TOKEN,
+				NOTIFICATIONS: env.NOTIFICATIONS,
 				STALE_AFTER_MINUTES: env.STALE_AFTER_MINUTES,
 				WATCHES: env.WATCHES,
 			});
@@ -30,13 +36,14 @@ export default {
 			console.error("Poll failed:", message);
 			if (
 				message.includes("Set steamApiKey") ||
-				message.includes("Set ntfyTopic") ||
+				message.includes("Set NOTIFICATIONS") ||
 				message.includes("Add at least one") ||
-				message.includes("WATCHES must be valid JSON")
+				message.includes("WATCHES must be valid JSON") ||
+				message.includes("NOTIFICATIONS must be")
 			) {
 				controller.noRetry();
 			}
 			throw err;
 		}
 	},
-} satisfies ExportedHandler<Env>;
+} satisfies ExportedHandler<WorkerEnv>;

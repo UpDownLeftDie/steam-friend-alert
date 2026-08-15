@@ -1,24 +1,23 @@
 {
-	"$schema": "./node_modules/wrangler/config-schema.json",
-	"name": "steam-friend-alert",
-	"main": "src/worker.ts",
-	"compatibility_date": "2026-08-15",
-	"observability": {
-		"enabled": true,
-		"head_sampling_rate": 1
-	},
-	"triggers": {
-		"crons": ["*/5 * * * *"]
-	},
-	"kv_namespaces": [
-		{
-			"binding": "STATE"
-		}
-	],
-	"vars": {
-		"NTFY_URL": "https://ntfy.sh",
-		"NTFY_TOPIC": "your-unique-topic-name",
-		"STALE_AFTER_MINUTES": "720",
-		"WATCHES": "[{\"steamId\":\"76561197960287930\",\"label\":\"Robin\"}]"
-	}
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "steam-friend-alert",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-08-15",
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1,
+  },
+  "triggers": {
+    "crons": ["*/5 * * * *"],
+  },
+  "kv_namespaces": [
+    {
+      "binding": "STATE",
+    },
+  ],
+  "vars": {
+    "STALE_AFTER_MINUTES": "720",
+    "WATCHES": "[{\"steamId\":\"76561197960287930\",\"label\":\"Charlie\"}]",
+    "NOTIFICATIONS": "[{\"type\":\"ntfy\",\"topic\":\"your-unique-topic-name\"}]",
+  },
 }

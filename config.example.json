@@ -1,15 +1,20 @@
 {
 	"steamApiKey": "YOUR_STEAM_API_KEY",
-	"ntfyTopic": "your-unique-topic-name",
-	"ntfyUrl": "https://ntfy.sh",
-	"ntfyToken": "",
+	"notifications": [
+		{
+			"type": "ntfy",
+			"topic": "your-unique-topic-name",
+			"url": "https://ntfy.sh",
+			"token": ""
+		}
+	],
 	"pollIntervalMinutes": 5,
 	"staleAfterMinutes": 720,
 	"watches": [
-		{ "steamId": "76561197960287930", "label": "Robin" },
+		{ "steamId": "76561197960287930", "label": "Charlie" },
 		{
 			"steamId": "76561197960287930",
-			"label": "Robin",
+			"label": "Charlie",
 			"gameNames": ["Counter-Strike 2", "Dota 2"]
 		}
 	]

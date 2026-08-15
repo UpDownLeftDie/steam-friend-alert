@@ -5,11 +5,45 @@ export interface Watch {
 	gameNames?: string[];
 }
 
+export type NotificationTarget =
+	| {
+			type: "ntfy";
+			topic: string;
+			url: string;
+			token: string;
+	  }
+	| {
+			type: "discord";
+			webhookUrl: string;
+	  }
+	| {
+			type: "webhook";
+			url: string;
+			authorization: string;
+	  }
+	| {
+			type: "pushover";
+			userKey: string;
+			apiToken: string;
+	  }
+	| {
+			type: "gotify";
+			url: string;
+			token: string;
+			priority: number;
+	  };
+
+export interface Alert {
+	title: string;
+	message: string;
+	label: string;
+	game: string;
+	steamId: string;
+}
+
 export interface Config {
 	steamApiKey: string;
-	ntfyTopic: string;
-	ntfyUrl: string;
-	ntfyToken: string;
+	notifications: NotificationTarget[];
 	pollIntervalMinutes: number;
 	/** If the last successful poll is older than this, forget prior games and treat as a new session. */
 	staleAfterMinutes?: number;
@@ -32,5 +66,10 @@ export const DEFAULT_STALE_AFTER_MINUTES = 12 * 60;
 
 export const DEFAULT_NTFY_URL = "https://ntfy.sh";
 export const DEFAULT_POLL_INTERVAL_MINUTES = 5;
+export const DEFAULT_GOTIFY_PRIORITY = 5;
 
 export type EnvLike = Record<string, string | undefined>;
+
+export function steamProfileUrl(steamId: string): string {
+	return `https://steamcommunity.com/profiles/${steamId}`;
+}

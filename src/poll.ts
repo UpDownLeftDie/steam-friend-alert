@@ -1,4 +1,4 @@
-import { sendNtfyAlert } from "./ntfy.ts";
+import { sendAlert } from "./notify.ts";
 import { fetchPlayerSummaries } from "./steam.ts";
 import {
 	type Config,
@@ -70,13 +70,13 @@ export async function pollOnce(
 			if (matched.length > 0) {
 				const label = matched[0].label ?? player?.personaname ?? steamId;
 				console.log(`[alert] ${label} started playing ${currentGame}`);
-				await sendNtfyAlert(
-					config.ntfyUrl,
-					config.ntfyToken,
-					config.ntfyTopic,
-					`${label} is now playing`,
-					currentGame,
-				);
+				await sendAlert(config, {
+					title: `${label} is now playing`,
+					message: currentGame,
+					label,
+					game: currentGame,
+					steamId,
+				});
 			}
 		}
 

@@ -1,6 +1,8 @@
 # Steam Friend Activity Alerts
 
-Polls the Steam Web API for chosen friends and sends a push notification (via [ntfy](https://ntfy.sh)) when one of them starts playing a game — either any game, or a specific one you name.
+Polls the Steam Web API for chosen friends and sends a notification when one of them starts playing a game — either any game, or a specific one you name.
+
+Supported destinations: [ntfy](https://ntfy.sh), [Discord](https://discord.com/developers/docs/resources/webhook) webhooks, generic JSON webhooks, [Pushover](https://pushover.net), and [Gotify](https://gotify.net). Enable as many as you want; each alert is sent to all of them.
 
 Run it locally, or deploy for free on **Cloudflare Workers** (recommended) or **Fly.io**.
 
@@ -14,16 +16,69 @@ For each friend: open their Steam profile and look up their **SteamID64** (17-di
 
 **Important:** a friend's game activity is only visible through the API if their profile's "Game details" privacy setting is Public (or Friends Only, if you're actually friends with them on the account tied to your API key). If it's set to Private, you won't get anything back for them.
 
-## 3. Pick an ntfy topic
+## 3. Pick notification destinations
 
-ntfy needs no account — a "topic" is just a private-ish channel name. Pick something unpredictable (e.g. `jared-steam-alerts-8f2k1`), since anyone who knows the exact name can subscribe to it.
+Add one or more entries to `notifications` in `config.json`.
+
+### ntfy
+
+ntfy needs no account — a "topic" is just a private-ish channel name. Pick something unpredictable (e.g. `steam-alerts-8f2k1`), since anyone who knows the exact name can subscribe to it.
 
 Then either:
 
 - Install the ntfy app ([iOS](https://apps.apple.com/app/ntfy/id1625396347) / [Android](https://play.google.com/store/apps/details?id=io.heckel.ntfy)) and subscribe to your topic, or
 - Just open `https://ntfy.sh/your-topic-name` in a browser to watch it there.
 
-If you self-host ntfy, set `ntfyUrl` / `NTFY_URL` to that origin and `ntfyToken` / `NTFY_TOKEN` if the topic is protected.
+If you self-host ntfy, set `url` to that origin and `token` if the topic is protected.
+
+```json
+{ "type": "ntfy", "topic": "steam-alerts-8f2k1", "url": "https://ntfy.sh", "token": "" }
+```
+
+### Discord webhook
+
+In a Discord channel: **Edit Channel → Integrations → Webhooks → New Webhook**. Copy the URL.
+
+```json
+{ "type": "discord", "webhookUrl": "https://discord.com/api/webhooks/ID/TOKEN" }
+```
+
+### Generic webhook
+
+POSTs JSON to any URL. Use this for [Apprise API](https://github.com/caronc/apprise-api), Home Assistant, or a custom endpoint. `authorization` is sent as the `Authorization` header (include `Bearer` if needed).
+
+```json
+{ "type": "webhook", "url": "https://example.com/hooks/steam", "authorization": "" }
+```
+
+Body:
+
+```json
+{
+  "title": "Charlie is now playing",
+  "message": "Counter-Strike 2",
+  "label": "Charlie",
+  "game": "Counter-Strike 2",
+  "steamId": "76561197960287930",
+  "profileUrl": "https://steamcommunity.com/profiles/76561197960287930"
+}
+```
+
+### Pushover
+
+Create an application at <https://pushover.net/apps/build> to get an API token. Your user key is on the [Pushover dashboard](https://pushover.net).
+
+```json
+{ "type": "pushover", "userKey": "USER_KEY", "apiToken": "APP_TOKEN" }
+```
+
+### Gotify
+
+Create an application in your Gotify server and copy its token.
+
+```json
+{ "type": "gotify", "url": "https://gotify.example.com", "token": "APP_TOKEN", "priority": 5 }
+```
 
 ## 4. Configure
 
@@ -32,16 +87,17 @@ Copy `config.example.json` to `config.json` and fill it in:
 ```json
 {
   "steamApiKey": "YOUR_STEAM_API_KEY",
-  "ntfyTopic": "jared-steam-alerts-8f2k1",
-  "ntfyUrl": "https://ntfy.sh",
-  "ntfyToken": "",
+  "notifications": [
+    { "type": "ntfy", "topic": "steam-alerts-8f2k1" },
+    { "type": "discord", "webhookUrl": "https://discord.com/api/webhooks/ID/TOKEN" }
+  ],
   "pollIntervalMinutes": 5,
   "staleAfterMinutes": 720,
   "watches": [
-    { "steamId": "76561197960287930", "label": "Robin" },
+    { "steamId": "76561197960287930", "label": "Charlie" },
     {
       "steamId": "76561197960287930",
-      "label": "Robin",
+      "label": "Charlie",
       "gameNames": ["Counter-Strike 2", "Dota 2"]
     }
   ]
@@ -58,7 +114,7 @@ Cloud deploys use environment variables instead of `config.json` — see below.
 
 ## 5. Run locally
 
-Requires [Node.js](https://nodejs.org) 18+ and [pnpm](https://pnpm.io) (or npm).
+Requires [Node.js](https://nodejs.org) 24+ and [pnpm](https://pnpm.io) (or npm).
 
 ```bash
 pnpm install
@@ -82,7 +138,7 @@ pm2 startup   # follow the printed instructions to launch on boot
 
 ## Deploy
 
-**Cloudflare Workers** is the best free option for this: a cron trigger every 5 minutes, KV for last-seen games, no always-on VM. Waiting on Steam/ntfy does not count toward the [10ms free-plan CPU limit](https://developers.cloudflare.com/workers/platform/limits/#cpu-time).
+**Cloudflare Workers** is the best free option for this: a cron trigger every 5 minutes, KV for last-seen games, no always-on VM. Waiting on Steam and notification APIs does not count toward the [10ms free-plan CPU limit](https://developers.cloudflare.com/workers/platform/limits/#cpu-time).
 
 **Fly.io** runs the same Node process as local, with a tiny volume for state. Use it if you already have Fly or want a long-running process.
 
@@ -95,7 +151,7 @@ pm2 startup   # follow the printed instructions to launch on boot
    cp .dev.vars.example .dev.vars
    ```
 
-2. Edit `wrangler.jsonc` `vars` (`NTFY_TOPIC`, `WATCHES`, optional `NTFY_URL` / `STALE_AFTER_MINUTES`). Change the cron if you want a different interval (`*/5 * * * *` is every 5 minutes, UTC).
+2. Edit `wrangler.jsonc` `vars`: `WATCHES` and `NOTIFICATIONS` (same JSON shape as `config.json`). Put tokens and webhook URLs in `.dev.vars` / secrets, not in `wrangler.jsonc`. Change the cron if you want a different interval (`*/5 * * * *` is every 5 minutes, UTC).
 
 3. Put secrets in `.dev.vars` for local testing, then:
 
@@ -104,15 +160,15 @@ pm2 startup   # follow the printed instructions to launch on boot
    curl "http://localhost:8787/cdn-cgi/handler/scheduled?format=json"
    ```
 
-4. Deploy:
+4. Deploy, then set secrets:
 
    ```bash
    pnpm deploy
    pnpm wrangler secret put STEAM_API_KEY
-   pnpm wrangler secret put NTFY_TOKEN
+   pnpm wrangler secret put NOTIFICATIONS
    ```
 
-   KV is created automatically on first deploy. `NTFY_TOKEN` can be empty if the topic is public.
+   `NOTIFICATIONS` is the same JSON array as in `config.json`. KV is created automatically on first deploy.
 
 5. Confirm the Worker is live (HTTP returns `steam-friend-alert`) and check **Cron Events** in the Cloudflare dashboard after a few minutes.
 
@@ -120,14 +176,14 @@ pm2 startup   # follow the printed instructions to launch on boot
 
 1. Install the [Fly CLI](https://fly.io/docs/flyctl/install/) and log in.
 
-2. Edit `fly.toml`: change `app` to a unique name, set `NTFY_TOPIC` and `WATCHES`.
+2. Edit `fly.toml`: change `app` to a unique name, and set `WATCHES`. Put `NOTIFICATIONS` (same JSON array as `config.json`) in a Fly secret if it includes tokens or webhook URLs.
 
 3. Launch (skip generating a new config if it asks):
 
    ```bash
    fly launch --copy-config --name YOUR-APP-NAME
    fly volumes create steam_alert_state --size 1
-   fly secrets set STEAM_API_KEY=your-key NTFY_TOKEN=your-token
+   fly secrets set STEAM_API_KEY=your-key
    fly deploy
    ```
 
@@ -140,4 +196,4 @@ You can also point Fly at a `config.json` with `CONFIG_PATH` / `STATE_PATH` inst
 - Steam's default API rate limit (100k calls/day) is far more than this needs even at a 1-minute poll interval with dozens of friends.
 - There's no push mechanism from Steam itself — this only works by polling, so alerts land up to one poll interval late.
 - Local state is `state.json` next to the project (or `STATE_PATH`). On Workers it lives in KV. If `lastCheckedAt` is older than `staleAfterMinutes`, the next poll treats it as a new session.
-- `config.json`, `.dev.vars`, and `state.json` are gitignored — never commit API keys or ntfy tokens.
+- `config.json`, `.dev.vars`, and `state.json` are gitignored — never commit API keys, webhook URLs, or tokens.

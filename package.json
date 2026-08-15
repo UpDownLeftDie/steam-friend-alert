@@ -1,27 +1,27 @@
 {
-	"name": "steam-friend-alert",
-	"version": "1.0.0",
-	"private": true,
-	"type": "module",
-	"scripts": {
-		"start": "tsx src/cli.ts",
-		"start:once": "tsx src/cli.ts --once",
-		"dev:worker": "wrangler dev",
-		"deploy": "wrangler deploy",
-		"cf-typegen": "wrangler types",
-		"lint": "wrangler types && biome check . && tsc --noEmit",
-		"lint:fix": "wrangler types && biome check --write . && tsc --noEmit"
-	},
-	"engines": {
-		"node": ">=18"
-	},
-	"dependencies": {
-		"tsx": "^4.23.12"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "2.5.8",
-		"@types/node": "^26.2.0",
-		"typescript": "^7.0.2",
-		"wrangler": "^4.34.0"
-	}
+  "name": "steam-friend-alert",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/cli.ts",
+    "start:once": "tsx src/cli.ts --once",
+    "dev:worker": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "lint": "wrangler types && biome check . && tsc --noEmit",
+    "lint:fix": "wrangler types && biome check --write . && tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "dependencies": {
+    "tsx": "^4.23.12"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.8",
+    "@types/node": "^26.2.0",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.123.0"
+  }
 }

@@ -3,6 +3,7 @@
   "name": "steam-friend-alert",
   "main": "src/worker.ts",
   "compatibility_date": "2026-08-15",
+  "placement": { "mode": "smart" },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,

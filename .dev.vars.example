@@ -1,0 +1,6 @@
+STEAM_API_KEY=YOUR_STEAM_API_KEY
+NTFY_TOKEN=
+NTFY_URL=https://ntfy.sh
+NTFY_TOPIC=your-unique-topic-name
+STALE_AFTER_MINUTES=720
+WATCHES=[{"steamId":"76561197960287930","label":"Robin"}]

@@ -1,0 +1,9 @@
+config.json
+state.json
+node_modules/
+dist/
+.dev.vars
+.wrangler/
+.mf/
+worker-configuration.d.ts
+.DS_Store

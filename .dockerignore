@@ -1,0 +1,9 @@
+node_modules
+.git
+.wrangler
+.dev.vars
+config.json
+state.json
+dist
+*.md
+.DS_Store

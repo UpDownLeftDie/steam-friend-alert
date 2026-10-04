@@ -228,7 +228,7 @@ Game filters always save to that same KV key and override `GAME_FILTER`. Notific
 
 Auth: password form sets an HttpOnly cookie (SHA-256 of the secret), or send `Authorization: Bearer <ADMIN_SECRET>`. Without `ADMIN_SECRET`, `/admin` returns 503.
 
-Admin auth/UI chrome comes from [`@codekitties/workers-mini-admin`](https://www.npmjs.com/package/@codekitties/workers-mini-admin).
+Admin auth/UI chrome comes from [`workers-mini-admin`](https://www.npmjs.com/package/workers-mini-admin).
 
 ### Fly.io
 

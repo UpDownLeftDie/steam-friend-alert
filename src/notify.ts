@@ -11,9 +11,11 @@ async function post(
 	init: RequestInit,
 	label: string,
 ): Promise<void> {
-	const res = await fetch(url, { method: "POST", ...init });
-	if (!res.ok) {
-		throw new Error(`${label} send failed: ${res.status} ${res.statusText}`);
+	const response = await fetch(url, { method: "POST", ...init });
+	if (!response.ok) {
+		throw new Error(
+			`${label} send failed: ${response.status} ${response.statusText}`,
+		);
 	}
 }
 
@@ -30,7 +32,7 @@ async function sendNtfy(
 	if (target.token) {
 		headers.Authorization = `Bearer ${target.token}`;
 	}
-	await post(url.toString(), { headers, body: alert.message }, "ntfy");
+	await post(url.href, { headers, body: alert.message }, "ntfy");
 }
 
 async function sendDiscord(
@@ -48,7 +50,7 @@ async function sendDiscord(
 						title: alert.title,
 						description: alert.message,
 						url: steamProfileUrl(alert.steamId),
-						color: 0x66c0f4,
+						color: 0x66_C0_F4,
 					},
 				],
 			}),
@@ -128,16 +130,21 @@ async function sendGotify(
 
 async function sendTo(target: NotificationTarget, alert: Alert): Promise<void> {
 	switch (target.type) {
-		case "ntfy":
+		case "ntfy": {
 			return sendNtfy(target, alert);
-		case "discord":
+		}
+		case "discord": {
 			return sendDiscord(target, alert);
-		case "webhook":
+		}
+		case "webhook": {
 			return sendWebhook(target, alert);
-		case "pushover":
+		}
+		case "pushover": {
 			return sendPushover(target, alert);
-		case "gotify":
+		}
+		case "gotify": {
 			return sendGotify(target, alert);
+		}
 	}
 }
 
@@ -146,13 +153,15 @@ export async function sendAlert(config: Config, alert: Alert): Promise<void> {
 		config.notifications.map((target) => sendTo(target, alert)),
 	);
 	for (const [index, result] of results.entries()) {
-		if (result.status === "rejected") {
-			const type = config.notifications[index]?.type ?? "notification";
-			const reason = result.reason;
-			console.error(
-				`${type} send failed:`,
-				reason instanceof Error ? reason.message : reason,
-			);
+		if (result.status !== "rejected") {
+			continue;
 		}
+
+		const type = config.notifications[index]?.type ?? "notification";
+		const reason = result.reason;
+		console.error(
+			`${type} send failed:`,
+			reason instanceof Error ? reason.message : reason,
+		);
 	}
 }

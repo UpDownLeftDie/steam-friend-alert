@@ -16,21 +16,22 @@ function pruneUnwatchedPlayers(state: State, watchedIds: Set<string>): void {
 }
 
 export function isStateStale(
-	lastCheckedAt: string | null,
+	lastCheckedAt: string | undefined,
 	staleAfterMinutes: number,
 ): boolean {
 	if (!lastCheckedAt) return true;
 	const last = Date.parse(lastCheckedAt);
-	if (Number.isNaN(last)) return true;
-	return Date.now() - last > staleAfterMinutes * 60 * 1000;
+	return (
+		Number.isNaN(last) || Date.now() - last > staleAfterMinutes * 60 * 1000
+	);
 }
 
 /**
- * Whether an alert should fire for this friend/game under the filter rules.
- * Effective list = global games ∪ per-friend games.
- * exclude + empty list → alert all; include + empty list → alert none.
- */
-export function passesGameFilter(
+Whether an alert should fire for this friend/game under the filter rules.
+Effective list = global games ∪ per-friend games.
+exclude + empty list → alert all; include + empty list → alert none.
+*/
+export function shouldAlertForGame(
 	filter: GameFilter,
 	steamId: string,
 	gameName: string,
@@ -42,8 +43,8 @@ export function passesGameFilter(
 		return mode === "exclude";
 	}
 	const lower = gameName.toLowerCase();
-	const matched = list.some((name) => lower.includes(name.toLowerCase()));
-	return mode === "exclude" ? !matched : matched;
+	const isMatched = list.some((name) => lower.includes(name.toLowerCase()));
+	return mode === "exclude" ? !isMatched : isMatched;
 }
 
 export async function pollOnce(
@@ -57,8 +58,8 @@ export async function pollOnce(
 
 	const staleAfterMinutes =
 		config.staleAfterMinutes ?? DEFAULT_STALE_AFTER_MINUTES;
-	const stale = isStateStale(state.lastCheckedAt, staleAfterMinutes);
-	if (stale && state.lastCheckedAt) {
+	const isStale = isStateStale(state.lastCheckedAt, staleAfterMinutes);
+	if (isStale && state.lastCheckedAt) {
 		console.log(
 			`[state] Last check was ${state.lastCheckedAt} (stale after ${staleAfterMinutes}m) — treating as a new session.`,
 		);
@@ -72,16 +73,16 @@ export async function pollOnce(
 
 	for (const steamId of uniqueSteamIds) {
 		const player = playerById.get(steamId);
-		const currentGame = player?.gameextrainfo ?? null;
-		const previousGame = stale ? null : (state.players[steamId] ?? null);
+		const currentGame = player?.gameextrainfo;
+		const previousGame = isStale ? undefined : state.players[steamId];
 
 		if (currentGame && currentGame !== previousGame) {
-			if (passesGameFilter(config.gameFilter, steamId, currentGame)) {
-				const watchesForFriend = config.watches.filter(
+			if (shouldAlertForGame(config.gameFilter, steamId, currentGame)) {
+				const watchesForFriend = config.watches.find(
 					(w) => w.steamId === steamId,
 				);
 				const label =
-					watchesForFriend[0]?.label ?? player?.personaname ?? steamId;
+					watchesForFriend?.label ?? player?.personaname ?? steamId;
 				console.log(`[alert] ${label} started playing ${currentGame}`);
 				await sendAlert(config, {
 					title: `${label} is now playing`,
@@ -97,7 +98,11 @@ export async function pollOnce(
 			}
 		}
 
-		state.players[steamId] = currentGame;
+		if (currentGame) {
+			state.players[steamId] = currentGame;
+		} else {
+			delete state.players[steamId];
+		}
 	}
 
 	state.lastCheckedAt = new Date().toISOString();

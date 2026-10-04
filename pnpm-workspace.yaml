@@ -2,5 +2,7 @@ allowBuilds:
   esbuild: true
   workerd: true
 minimumReleaseAgeExclude:
-  - "@codekitties/workers-mini-admin@0.1.0 || 0.1.1"
+  - workers-mini-admin@0.1.1
   - wrangler@4.147.0
+  - eslint-config-narwhal@1.0.2
+  - eslint-plugin-unicorn@77.0.0

@@ -1,16 +1,16 @@
 import {
-	fallbackFilterFromEnv,
+	fallbackFilterFromEnvironment,
 	gameFilterAdmin,
 	loadSettings,
-	watchesFromEnv,
+	watchesFromEnvironment,
 } from "./admin.ts";
-import { configFromEnv, mergeSettings, parseState } from "./config.ts";
+import { configFromEnvironment, mergeSettings, parseState } from "./config.ts";
 import { pollOnce } from "./poll.ts";
 import type { Watch } from "./types.ts";
 
 const STATE_KEY = "state";
 
-interface WorkerEnv {
+interface WorkerEnvironment {
 	STEAM_API_KEY: string;
 	NOTIFICATIONS: string;
 	STALE_AFTER_MINUTES?: string;
@@ -20,46 +20,48 @@ interface WorkerEnv {
 	STATE: KVNamespace;
 }
 
-function baseConfigFromEnv(env: WorkerEnv) {
-	return configFromEnv({
-		STEAM_API_KEY: env.STEAM_API_KEY,
-		NOTIFICATIONS: env.NOTIFICATIONS,
-		STALE_AFTER_MINUTES: env.STALE_AFTER_MINUTES,
-		WATCHES: env.WATCHES,
-		GAME_FILTER: env.GAME_FILTER,
+function baseConfigFromEnvironment(environment: WorkerEnvironment) {
+	return configFromEnvironment({
+		STEAM_API_KEY: environment.STEAM_API_KEY,
+		NOTIFICATIONS: environment.NOTIFICATIONS,
+		STALE_AFTER_MINUTES: environment.STALE_AFTER_MINUTES,
+		WATCHES: environment.WATCHES,
+		GAME_FILTER: environment.GAME_FILTER,
 	});
 }
 
-function resolveWatches(env: WorkerEnv): Watch[] {
+function resolveWatches(environment: WorkerEnvironment): Watch[] {
 	try {
-		return baseConfigFromEnv(env).watches;
+		return baseConfigFromEnvironment(environment).watches;
 	} catch {
-		return watchesFromEnv(env);
+		return watchesFromEnvironment(environment);
 	}
 }
 
-function resolveFallbackFilter(env: WorkerEnv) {
+function resolveFallbackFilter(environment: WorkerEnvironment) {
 	try {
-		return baseConfigFromEnv(env).gameFilter;
+		return baseConfigFromEnvironment(environment).gameFilter;
 	} catch {
-		return fallbackFilterFromEnv(env);
+		return fallbackFilterFromEnvironment(environment);
 	}
 }
 
-/** Env view for admin that prefers parsed config watches/filter when available. */
-function adminEnv(env: WorkerEnv): WorkerEnv {
-	const watches = resolveWatches(env);
-	const filter = resolveFallbackFilter(env);
+/**
+Env view for admin that prefers parsed config watches/filter when available.
+*/
+function adminEnvironment(environment: WorkerEnvironment): WorkerEnvironment {
+	const watches = resolveWatches(environment);
+	const filter = resolveFallbackFilter(environment);
 	return {
-		...env,
+		...environment,
 		WATCHES: JSON.stringify(watches),
 		GAME_FILTER: JSON.stringify(filter),
 	};
 }
 
 export default {
-	async fetch(request, env): Promise<Response> {
-		const adminResponse = await gameFilterAdmin.fetch(request, adminEnv(env));
+	async fetch(request, environment): Promise<Response> {
+		const adminResponse = await gameFilterAdmin.fetch(request, adminEnvironment(environment));
 		if (adminResponse) return adminResponse;
 
 		return new Response("steam-friend-alert\n", {
@@ -67,29 +69,29 @@ export default {
 		});
 	},
 
-	async scheduled(controller, env): Promise<void> {
+	async scheduled(controller, environment): Promise<void> {
 		try {
-			const settings = await loadSettings(env.STATE);
-			const baseConfig = configFromEnv({
-				STEAM_API_KEY: env.STEAM_API_KEY,
-				NOTIFICATIONS: env.NOTIFICATIONS,
-				STALE_AFTER_MINUTES: env.STALE_AFTER_MINUTES,
+			const settings = await loadSettings(environment.STATE);
+			const baseConfig = configFromEnvironment({
+				STEAM_API_KEY: environment.STEAM_API_KEY,
+				NOTIFICATIONS: environment.NOTIFICATIONS,
+				STALE_AFTER_MINUTES: environment.STALE_AFTER_MINUTES,
 				WATCHES:
-					settings?.watches !== undefined
-						? JSON.stringify(settings.watches)
-						: env.WATCHES,
-				GAME_FILTER: env.GAME_FILTER,
+					settings?.watches === undefined
+						? environment.WATCHES
+						: JSON.stringify(settings.watches),
+				GAME_FILTER: environment.GAME_FILTER,
 			});
 			const config = settings
 				? mergeSettings(baseConfig, settings)
 				: baseConfig;
-			const stored = await env.STATE.get(STATE_KEY, "json");
+			const stored = await environment.STATE.get(STATE_KEY, "json");
 			const state = parseState(stored);
 			await pollOnce(config, state, async (next) => {
-				await env.STATE.put(STATE_KEY, JSON.stringify(next));
+				await environment.STATE.put(STATE_KEY, JSON.stringify(next));
 			});
-		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error);
 			console.error("Poll failed:", message);
 			if (
 				message.includes("Set steamApiKey") ||
@@ -101,7 +103,7 @@ export default {
 			) {
 				controller.noRetry();
 			}
-			throw err;
+			throw error;
 		}
 	},
-} satisfies ExportedHandler<WorkerEnv>;
+} satisfies ExportedHandler<WorkerEnvironment>;

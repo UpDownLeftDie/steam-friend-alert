@@ -6,7 +6,9 @@ export interface Watch {
 export type GameFilterMode = "exclude" | "include";
 
 export interface FriendGameFilter {
-	/** Override global mode; omit to inherit. */
+	/**
+	Override global mode; omit to inherit.
+	*/
 	mode?: GameFilterMode;
 	games: string[];
 }
@@ -57,26 +59,31 @@ export interface Config {
 	steamApiKey: string;
 	notifications: NotificationTarget[];
 	pollIntervalMinutes: number;
-	/** If the last successful poll is older than this, forget prior games and treat as a new session. */
+	/**
+	If the last successful poll is older than this, forget prior games and treat as a new session.
+	*/
 	staleAfterMinutes?: number;
 	watches: Watch[];
 	gameFilter: GameFilter;
 }
 
 /**
- * Editable Worker settings stored in KV (separate from poll state).
- * A field that is present overrides the matching env var; an omitted field
- * keeps the declarative value.
- */
+Editable Worker settings stored in KV (separate from poll state).
+A field that is present overrides the matching env var; an omitted field
+keeps the declarative value.
+*/
 export interface Settings {
 	gameFilter: GameFilter;
-	/** When set, replaces `WATCHES`. */
+	/**
+	When set, replaces `WATCHES`.
+	*/
 	watches?: Watch[];
 }
 
 export interface State {
-	lastCheckedAt: string | null;
-	players: Record<string, string | null>;
+	lastCheckedAt?: string;
+	// Only friends currently in a game. Idle friends are left out.
+	players: Record<string, string>;
 }
 
 export interface SteamPlayer {
@@ -85,7 +92,9 @@ export interface SteamPlayer {
 	gameextrainfo?: string;
 }
 
-/** Default: treat state as a new session if we haven't polled in 12 hours. */
+/**
+Default: treat state as a new session if we haven't polled in 12 hours.
+*/
 export const DEFAULT_STALE_AFTER_MINUTES = 12 * 60;
 
 export const DEFAULT_NTFY_URL = "https://ntfy.sh";
@@ -98,7 +107,7 @@ export const DEFAULT_GAME_FILTER: GameFilter = {
 	bySteamId: {},
 };
 
-export type EnvLike = Record<string, string | undefined>;
+export type EnvironmentLike = Record<string, string | undefined>;
 
 export function steamProfileUrl(steamId: string): string {
 	return `https://steamcommunity.com/profiles/${steamId}`;

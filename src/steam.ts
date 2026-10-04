@@ -16,12 +16,12 @@ export async function fetchPlayerSummaries(
 	url.searchParams.set("key", apiKey);
 	url.searchParams.set("steamids", steamIds.join(","));
 
-	const res = await fetch(url);
-	if (!res.ok) {
+	const response = await fetch(url);
+	if (!response.ok) {
 		throw new Error(
-			`Steam API request failed: ${res.status} ${res.statusText}`,
+			`Steam API request failed: ${response.status} ${response.statusText}`,
 		);
 	}
-	const data = (await res.json()) as SteamSummariesResponse;
+	const data = (await response.json()) as SteamSummariesResponse;
 	return data.response?.players ?? [];
 }

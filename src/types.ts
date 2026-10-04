@@ -1,8 +1,20 @@
 export interface Watch {
 	steamId: string;
 	label?: string;
-	/** Optional case-insensitive substring matches against the game's display name. Omit (or use []) to alert on any game. */
-	gameNames?: string[];
+}
+
+export type GameFilterMode = "exclude" | "include";
+
+export interface FriendGameFilter {
+	/** Override global mode; omit to inherit. */
+	mode?: GameFilterMode;
+	games: string[];
+}
+
+export interface GameFilter {
+	mode: GameFilterMode;
+	games: string[];
+	bySteamId: Record<string, FriendGameFilter>;
 }
 
 export type NotificationTarget =
@@ -48,6 +60,12 @@ export interface Config {
 	/** If the last successful poll is older than this, forget prior games and treat as a new session. */
 	staleAfterMinutes?: number;
 	watches: Watch[];
+	gameFilter: GameFilter;
+}
+
+/** Editable Worker settings stored in KV (separate from poll state). */
+export interface Settings {
+	gameFilter: GameFilter;
 }
 
 export interface State {
@@ -67,6 +85,12 @@ export const DEFAULT_STALE_AFTER_MINUTES = 12 * 60;
 export const DEFAULT_NTFY_URL = "https://ntfy.sh";
 export const DEFAULT_POLL_INTERVAL_MINUTES = 5;
 export const DEFAULT_GOTIFY_PRIORITY = 5;
+
+export const DEFAULT_GAME_FILTER: GameFilter = {
+	mode: "exclude",
+	games: [],
+	bySteamId: {},
+};
 
 export type EnvLike = Record<string, string | undefined>;
 

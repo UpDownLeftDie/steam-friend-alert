@@ -10,12 +10,15 @@
 	],
 	"pollIntervalMinutes": 5,
 	"staleAfterMinutes": 720,
-	"watches": [
-		{ "steamId": "76561197960287930", "label": "Charlie" },
-		{
-			"steamId": "76561197960287930",
-			"label": "Charlie",
-			"gameNames": ["Counter-Strike 2", "Dota 2"]
+	"watches": [{ "steamId": "76561197960287930", "label": "Charlie" }],
+	"gameFilter": {
+		"mode": "exclude",
+		"games": ["Wallpaper Engine", "Idle"],
+		"bySteamId": {
+			"76561197960287930": {
+				"mode": "include",
+				"games": ["Counter-Strike 2", "Dota 2"]
+			}
 		}
-	]
+	}
 }

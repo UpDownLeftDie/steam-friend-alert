@@ -1,27 +1,28 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "steam-friend-alert",
-  "main": "src/worker.ts",
-  "compatibility_date": "2026-08-15",
-  "placement": { "mode": "smart" },
-  "observability": {
-    "enabled": true,
-    "head_sampling_rate": 1,
-  },
-  "triggers": {
-    "crons": ["*/5 * * * *"],
-  },
-  "kv_namespaces": [
-    {
-      "binding": "STATE",
-      "id": "c2697977f1554fc6b95e5691e5bc4159",
-    },
-  ],
-  // Non-secret settings. Secrets (STEAM_API_KEY, NOTIFICATIONS) live in
-  // .dev.vars locally and `wrangler secret put` in production — those
-  // override vars of the same name, so do not duplicate them here.
-  "vars": {
-    "STALE_AFTER_MINUTES": "720",
-    "WATCHES": "[{\"steamId\":\"76561197960287930\",\"label\":\"Charlie\"}]",
-  },
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "steam-friend-alert",
+	"main": "src/worker.ts",
+	"compatibility_date": "2026-10-02",
+	"placement": { "mode": "smart" },
+	"observability": {
+		"enabled": true,
+		"head_sampling_rate": 1
+	},
+	"triggers": {
+		"crons": ["*/5 * * * *"]
+	},
+	"kv_namespaces": [
+		{
+			"binding": "STATE",
+			"id": "c2697977f1554fc6b95e5691e5bc4159"
+		}
+	],
+	// Non-secret settings. Secrets (STEAM_API_KEY, NOTIFICATIONS, ADMIN_SECRET)
+	// live in .dev.vars locally and `wrangler secret put` in production — those
+	// override vars of the same name, so do not duplicate them here.
+	// Optional GAME_FILTER JSON can go in vars; the /admin UI stores overrides in KV.
+	"vars": {
+		"STALE_AFTER_MINUTES": "720",
+		"WATCHES": "[{\"steamId\":\"76561197960287930\",\"label\":\"Charlie\"}]"
+	}
 }

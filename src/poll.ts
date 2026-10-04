@@ -3,8 +3,8 @@ import { fetchPlayerSummaries } from "./steam.ts";
 import {
 	type Config,
 	DEFAULT_STALE_AFTER_MINUTES,
+	type GameFilter,
 	type State,
-	type Watch,
 } from "./types.ts";
 
 function pruneUnwatchedPlayers(state: State, watchedIds: Set<string>): void {
@@ -25,10 +25,25 @@ export function isStateStale(
 	return Date.now() - last > staleAfterMinutes * 60 * 1000;
 }
 
-export function matchesWatch(watch: Watch, gameName: string): boolean {
-	if (!watch.gameNames?.length) return true;
+/**
+ * Whether an alert should fire for this friend/game under the filter rules.
+ * Effective list = global games ∪ per-friend games.
+ * exclude + empty list → alert all; include + empty list → alert none.
+ */
+export function passesGameFilter(
+	filter: GameFilter,
+	steamId: string,
+	gameName: string,
+): boolean {
+	const friend = filter.bySteamId[steamId];
+	const mode = friend?.mode ?? filter.mode;
+	const list = [...filter.games, ...(friend?.games ?? [])];
+	if (list.length === 0) {
+		return mode === "exclude";
+	}
 	const lower = gameName.toLowerCase();
-	return watch.gameNames.some((name) => lower.includes(name.toLowerCase()));
+	const matched = list.some((name) => lower.includes(name.toLowerCase()));
+	return mode === "exclude" ? !matched : matched;
 }
 
 export async function pollOnce(
@@ -61,14 +76,12 @@ export async function pollOnce(
 		const previousGame = stale ? null : (state.players[steamId] ?? null);
 
 		if (currentGame && currentGame !== previousGame) {
-			const watchesForFriend = config.watches.filter(
-				(w) => w.steamId === steamId,
-			);
-			const matched = watchesForFriend.filter((w) =>
-				matchesWatch(w, currentGame),
-			);
-			if (matched.length > 0) {
-				const label = matched[0].label ?? player?.personaname ?? steamId;
+			if (passesGameFilter(config.gameFilter, steamId, currentGame)) {
+				const watchesForFriend = config.watches.filter(
+					(w) => w.steamId === steamId,
+				);
+				const label =
+					watchesForFriend[0]?.label ?? player?.personaname ?? steamId;
 				console.log(`[alert] ${label} started playing ${currentGame}`);
 				await sendAlert(config, {
 					title: `${label} is now playing`,
@@ -77,6 +90,10 @@ export async function pollOnce(
 					game: currentGame,
 					steamId,
 				});
+			} else {
+				console.log(
+					`[filter] Skipping ${currentGame} for ${steamId} (game filter)`,
+				);
 			}
 		}
 

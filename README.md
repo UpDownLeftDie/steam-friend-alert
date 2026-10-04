@@ -57,7 +57,7 @@ Empty list behavior: `exclude` → alert on every game; `include` → alert on n
 }
 ```
 
-Locally, put this in `config.json`. On Workers, set optional env/var `GAME_FILTER` to the same JSON, or edit filters in the [`/admin`](#admin-ui-workers) UI (KV overrides env once saved).
+Locally, put this in `config.json`. On Workers, set optional env/var `GAME_FILTER` to the same JSON, or edit filters in the [`/admin`](#admin-ui-workers) UI. A saved filter overrides `GAME_FILTER` until you change it again.
 
 ### Notifications
 
@@ -165,7 +165,7 @@ State is stored in `state.json` next to the project (or `STATE_PATH`).
 
 ## Cloud deploy
 
-Skip `config.json`. Use the same [watches](#friends-to-watch) and [notifications](#notifications) JSON as environment variables `WATCHES` and `NOTIFICATIONS`. Put the Steam API key, tokens, and webhook URLs in secrets, not in committed files.
+Skip `config.json`. Put [notifications](#notifications) JSON in the `NOTIFICATIONS` secret, and the Steam API key and webhook URLs in secrets, not in committed files. Friends can live in the `WATCHES` variable or be saved from [`/admin`](#admin-ui-workers).
 
 **Cloudflare Workers** is the best free option: a cron every 5 minutes, KV for last-seen games, no always-on VM. Waiting on Steam and notification APIs does not count toward the [10ms free-plan CPU limit](https://developers.cloudflare.com/workers/platform/limits/#cpu-time).
 
@@ -180,7 +180,7 @@ Skip `config.json`. Use the same [watches](#friends-to-watch) and [notifications
    cp .dev.vars.example .dev.vars
    ```
 
-2. Edit `wrangler.jsonc` `vars`: `WATCHES` and a placeholder `NOTIFICATIONS` if you want. Change the cron if you want a different interval (`*/5 * * * *` is every 5 minutes, UTC).
+2. Edit `wrangler.jsonc` `vars`: set `WATCHES` if you want friends declared in config. You can leave it unset and add friends in [`/admin`](#admin-ui-workers) instead. Change the cron if you want a different interval (`*/5 * * * *` is every 5 minutes, UTC).
 
 3. Put `STEAM_API_KEY`, the real `NOTIFICATIONS` JSON, and `ADMIN_SECRET` (password for `/admin`) in `.dev.vars`, then:
 
@@ -217,7 +217,14 @@ State lives in KV. If `lastCheckedAt` is older than `STALE_AFTER_MINUTES` (defau
 
 ### Admin UI (Workers)
 
-With `ADMIN_SECRET` set, open `https://YOUR_WORKER/admin`, sign in, and edit global / per-friend game filters. Saves go to KV key `settings` and override `GAME_FILTER` / config on the next poll. Watches and notification targets stay in env / `wrangler.jsonc` — they are not edited in the UI.
+With `ADMIN_SECRET` set, open `https://YOUR_WORKER/admin` and sign in.
+
+Two ways to choose friends:
+
+- **Declarative:** set the `WATCHES` variable and leave “Use this list instead of the WATCHES variable” unchecked. Deploys keep owning that list.
+- **UI:** paste friends in `/admin`, check that box, and save. The list is stored in KV key `settings` and replaces `WATCHES` on the next poll. Uncheck the box and save to go back to the variable. `WATCHES` can be omitted if this list is saved.
+
+Game filters always save to that same KV key and override `GAME_FILTER`. Notification targets stay in the `NOTIFICATIONS` secret.
 
 Auth: password form sets an HttpOnly cookie (SHA-256 of the secret), or send `Authorization: Bearer <ADMIN_SECRET>`. Without `ADMIN_SECRET`, `/admin` returns 503.
 

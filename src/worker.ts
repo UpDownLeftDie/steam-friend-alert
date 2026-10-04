@@ -69,8 +69,17 @@ export default {
 
 	async scheduled(controller, env): Promise<void> {
 		try {
-			const baseConfig = baseConfigFromEnv(env);
 			const settings = await loadSettings(env.STATE);
+			const baseConfig = configFromEnv({
+				STEAM_API_KEY: env.STEAM_API_KEY,
+				NOTIFICATIONS: env.NOTIFICATIONS,
+				STALE_AFTER_MINUTES: env.STALE_AFTER_MINUTES,
+				WATCHES:
+					settings?.watches !== undefined
+						? JSON.stringify(settings.watches)
+						: env.WATCHES,
+				GAME_FILTER: env.GAME_FILTER,
+			});
 			const config = settings
 				? mergeSettings(baseConfig, settings)
 				: baseConfig;

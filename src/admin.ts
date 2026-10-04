@@ -4,10 +4,12 @@ import {
 	formText,
 } from "@codekitties/workers-mini-admin";
 import {
+	formatWatches,
 	gamesFromLines,
 	gamesToLines,
 	parseGameFilter,
 	parseSettings,
+	parseWatchesText,
 } from "./config.ts";
 import {
 	DEFAULT_GAME_FILTER,
@@ -94,6 +96,29 @@ function modeSelectOptions(includeDefault: boolean): {
 	return options;
 }
 
+function watchFields(watches: Watch[], override: boolean): Field[] {
+	return [
+		{
+			type: "html",
+			html: '<h2 style="font-size:1.1rem;margin:0 0 0.5rem">Watches</h2><p class="hint">The <code>WATCHES</code> variable is used until you save a list here. Saving stores it in KV and ignores the variable until you uncheck the box and save again. Notifications stay in secrets.</p>',
+		},
+		{
+			type: "checkbox",
+			name: "watches_override",
+			label: "Use this list instead of the WATCHES variable",
+			checked: override,
+		},
+		{
+			type: "textarea",
+			name: "watches",
+			label: "Friends to watch",
+			hint: "One per line: SteamID64 and an optional label. A JSON array works too.",
+			placeholder: "76561197960287930 Charlie",
+			value: formatWatches(watches),
+		},
+	];
+}
+
 function filterFields(filter: GameFilter, watches: Watch[]): Field[] {
 	const fields: Field[] = [
 		{
@@ -126,7 +151,7 @@ function filterFields(filter: GameFilter, watches: Watch[]): Field[] {
 	if (friends.length === 0) {
 		fields.push({
 			type: "html",
-			html: '<p class="hint">No watches configured.</p>',
+			html: '<p class="hint">No watches yet. Add them above, or set the WATCHES variable.</p>',
 		});
 		return fields;
 	}
@@ -222,22 +247,49 @@ export function fallbackFilterFromEnv(env: AdminEnv): GameFilter {
 
 export const gameFilterAdmin = createAdmin<AdminEnv>({
 	basePath: "/admin",
-	title: "Game filters",
+	title: "Settings",
 	getSecret: (env) => env.ADMIN_SECRET,
 	async render({ env }) {
-		const watches = watchesFromEnv(env);
 		const settings = await loadSettings(env.STATE);
+		const envWatches = watchesFromEnv(env);
+		const override = settings?.watches !== undefined;
+		const watches = settings?.watches ?? envWatches;
 		const filter = settings?.gameFilter ?? fallbackFilterFromEnv(env);
 		return {
-			hint: "Stored in Workers KV and applied on the next poll. Watches and notifications stay in env / wrangler vars.",
-			submitLabel: "Save filters",
-			fields: filterFields(filter, watches),
+			hint: "Filters always save to KV and override GAME_FILTER. Watches stay on the WATCHES variable unless you opt in below.",
+			submitLabel: "Save",
+			fields: [
+				...watchFields(watches, override),
+				...filterFields(filter, watches),
+			],
 		};
 	},
 	async save({ form, env }) {
-		const watches = watchesFromEnv(env);
-		const gameFilter = gameFilterFromForm(form, watches);
-		await saveSettings(env.STATE, { gameFilter });
-		return { flash: "Saved. Filters apply on the next poll." };
+		const override = formText(form, "watches_override") === "on";
+		const envWatches = watchesFromEnv(env);
+		let storedWatches: Watch[] | undefined;
+		let watchesForFilters: Watch[];
+		if (override) {
+			storedWatches = uniqueWatches(
+				parseWatchesText(formText(form, "watches")),
+			);
+			if (storedWatches.length === 0) {
+				throw new Error(
+					"Add at least one watch, or uncheck the box to keep using the WATCHES variable.",
+				);
+			}
+			watchesForFilters = storedWatches;
+		} else {
+			watchesForFilters = envWatches;
+		}
+		const gameFilter = gameFilterFromForm(form, watchesForFilters);
+		const settings: Settings = { gameFilter };
+		if (storedWatches) settings.watches = storedWatches;
+		await saveSettings(env.STATE, settings);
+		return {
+			flash: storedWatches
+				? "Saved. This watch list and the filters apply on the next poll."
+				: "Saved. Filters apply on the next poll. Watches still come from the WATCHES variable.",
+		};
 	},
 });

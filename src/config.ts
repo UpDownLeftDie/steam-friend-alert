@@ -369,15 +369,71 @@ export function parseSettings(raw: unknown): Settings {
 	if (!record) {
 		throw new Error("Settings must be a JSON object");
 	}
-	return { gameFilter: parseGameFilter(record.gameFilter) };
+	const settings: Settings = {
+		gameFilter: parseGameFilter(record.gameFilter),
+	};
+	if (record.watches !== undefined) {
+		settings.watches = parseWatches(record.watches);
+	}
+	return settings;
 }
 
-/** Overlay KV/admin settings onto a base config (filters only). */
+/** Overlay KV/admin settings onto a base config. Omitted fields keep the base value. */
 export function mergeSettings(config: Config, settings: Settings): Config {
 	return {
 		...config,
 		gameFilter: structuredClone(settings.gameFilter),
+		...(settings.watches !== undefined
+			? { watches: structuredClone(settings.watches) }
+			: {}),
 	};
+}
+
+export function parseWatches(raw: unknown): Watch[] {
+	if (!Array.isArray(raw)) {
+		throw new Error("watches must be an array");
+	}
+	return raw.map((value, index) => parseWatch(value, index).watch);
+}
+
+/** One friend per line (`SteamID64` plus an optional label), or a JSON array. */
+export function parseWatchesText(text: string): Watch[] {
+	const trimmed = text.trim();
+	if (!trimmed) return [];
+	if (trimmed.startsWith("[")) {
+		try {
+			return parseWatches(JSON.parse(trimmed));
+		} catch (err) {
+			if (err instanceof Error && err.message.startsWith("watches")) {
+				throw err;
+			}
+			throw new Error("Watch list JSON is invalid");
+		}
+	}
+	const watches: Watch[] = [];
+	let index = 0;
+	for (const line of text.split(/\r?\n/)) {
+		const raw = line.trim();
+		if (!raw || raw.startsWith("#")) continue;
+		const splitAt = raw.search(/\s/);
+		const steamId = splitAt === -1 ? raw : raw.slice(0, splitAt);
+		const label = splitAt === -1 ? "" : raw.slice(splitAt).trim();
+		const value: { steamId: string; label?: string } = { steamId };
+		if (label) value.label = label;
+		watches.push(parseWatch(value, index).watch);
+		index++;
+	}
+	return watches;
+}
+
+export function formatWatches(watches: Watch[]): string {
+	return watches
+		.map((watch) =>
+			watch.label?.trim()
+				? `${watch.steamId} ${watch.label.trim()}`
+				: watch.steamId,
+		)
+		.join("\n");
 }
 
 function toPlayerMap(

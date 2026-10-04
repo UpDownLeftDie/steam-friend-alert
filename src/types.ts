@@ -63,9 +63,15 @@ export interface Config {
 	gameFilter: GameFilter;
 }
 
-/** Editable Worker settings stored in KV (separate from poll state). */
+/**
+ * Editable Worker settings stored in KV (separate from poll state).
+ * A field that is present overrides the matching env var; an omitted field
+ * keeps the declarative value.
+ */
 export interface Settings {
 	gameFilter: GameFilter;
+	/** When set, replaces `WATCHES`. */
+	watches?: Watch[];
 }
 
 export interface State {
